@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flask</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"> </script>
+<script type="text/javascript">
+function SendPost(){
+    $.ajax({
+   url: "https://central.pay-trio.com/invoice",
+   method: "POST",
+   contentType: "application/json; charset=utf-8",
+   data: {{context}},
+   dataType: "json",
+   success: function(result) {
+        alert(result.Result);
+        }
+    });
+});
+    </script>
+</head>
+<body>
+	{% block main %}
+	{% if error %}
+		<p>{{error}}</p>
+	{% elif checkPoint %}
+	    {% if context %}
+	        <p>JSON:</p>
+	        <br/>
+    	    {{context}}
+            <br/>
+            <p><a href = 'javascript:SendPost()' id="post">Оплатить</a></p>
+		{% else %}
+    		<form name="Pay" method="POST" action="https://tip.pay-trio.com/ru/"
+    			accept-charset="UTF-8">
+    		    {{form.as_p}}
+			    <p><input type="submit" value="ОТПРАВИТЬ"></p>
+		    </form>
+		{% endif %}
+	{% else %}
+		<form name="Pay" method="post" action="/payment/" accept-charset="UTF-8">{% csrf_token %}
+			<p><label for="amount">Amount  </label>{{form.amount}}</p>
+			<p><label for="description">Description  </label>{{form.description}}</p>
+			<p><label for="currency">Currency  </label>
+			<select title="from" name="currency">
+                {% for x,y in form.currency.field.choices %}
+                	<option value="{{x}}">{{ y }}</option>
+                {% endfor %}
+            </select></p>
+			<p>
+				<input type="submit" value="ОТПРАВИТЬ">
+			</p>
+		</form>
+	{% endif %}
+	{% endblock %}
+</body>
+</html>
