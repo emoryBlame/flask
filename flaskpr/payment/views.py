@@ -2,6 +2,10 @@ from django.shortcuts import render
 from .forms import payForm, TIPForm, InvoiceForm
 from .models import payTrio
 from hashlib import md5
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_protect
+from django.core import serializers
 
 # Create your views here.
 shop_id = 306717
@@ -14,7 +18,6 @@ def  template(request):
 			currency = form.cleaned_data['currency']
 			amount = form.cleaned_data['amount']
 			description = form.cleaned_data['description']
-			print(currency)
 			if int(currency) == 978: # EUR' invoice
 				payway = 'payeer_eur'
 				sign = save_sign(str(amount), str(currency), str(payway), str(shop_id), secret)
@@ -29,7 +32,7 @@ def  template(request):
 					'shop_id': int(qs.shop_id),
 					'sign': qs.sign
 				}
-				return render(request, 'index.html', {'context': context,
+				return render(request, 'index.html', {'context': json.dumps(context),
 													'checkPoint': '1'})
 			else: # 840 'USD'
 				payway = 'payeer_usd'
@@ -38,6 +41,7 @@ def  template(request):
 				invoice.save()
 				qs = payTrio.objects.get(shop_invoice_id=invoice.shop_invoice_id)
 				form = TIPForm(instance=qs)
+				print(form)
 				return render(request, 'index.html', {'form': form,
 													'checkPoint': '1'})
 		else:
@@ -47,11 +51,23 @@ def  template(request):
 
 
 def save_sign(amount, currency, payway, shop_id, secret):
-	unic = (amount+':'+currency+':'+payway+':'+shop_id+secret).encode('utf-8')
+	unic = (amount+'.00'+':'+currency+':'+payway+':'+shop_id+secret).encode('utf-8')
 	sign = md5(unic).hexdigest()
 	return sign
 
 
+@csrf_protect
 def status(request):
-	return render(request, 'status.html', {'massage': 'Активация прошла успешно.'})
+	json_resp = request.body.decode('utf-8')
+	print(json_resp)
+	a = json.loads(json_resp)
+	d = {}
+	d_serialized = ''
+	if a['currency'] != None:
+		d = {'result': 'Обработка прошла успешно!'}
+		#d_serialized = serializers.serialize('json', d)
+		print(d)
+	return JsonResponse(d, safe=False)
+
+
 
